@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ja" class="h-full select-none">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>水産生物の育成：技術科神経衰弱ゲーム</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Confetti JS for Clear Celebration -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+        
+        * {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #0f172a 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            overflow-x: hidden;
+        }
+
+        html {
+            height: -webkit-fill-available;
+        }
+
+        /* Card Perspective and Flip Effects */
+        .card-perspective {
+            perspective: 1000px;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-back {
+            background: linear-gradient(135deg, #0284c7 0%, #1e40af 100%);
+            border: 2px solid #38bdf8;
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.2);
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+            color: #0f172a;
+            transform: rotateY(180deg);
+            border: 3px solid #0284c7;
+        }
+
+        .card.matched .card-front {
+            border-color: #10b981;
+            background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+        }
+
+        /* Certificate Styling */
+        .certificate-box {
+            background: #fffbeb;
+            border: 8px double #b45309;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            color: #451a03;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #38bdf8;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="flex flex-col justify-between min-h-screen">
+
+    <header class="bg-slate-900/90 backdrop-blur border-b border-sky-500/30 sticky top-0 z-30 px-3 py-2.5">
+        <div class="max-w-5xl mx-auto flex justify-between items-center gap-2">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl sm:text-3xl">🐟</span>
+                <div>
+                    <h1 class="text-base sm:text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-sky-300 via-cyan-200 to-teal-300">
+                        水産生物の育成：技術科神経衰弱
+                    </h1>
+                    <p class="text-[10px] text-sky-300 hidden sm:block">中学2年「生物育成の技術」対応・タッチ完全対応</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-1.5">
+                <button id="btn-encyclopedia" class="bg-amber-500 active:bg-amber-600 text-slate-950 font-black px-3 py-2 rounded-xl text-xs flex items-center gap-1 transition shadow-md active:scale-95">
+                    <i class="fa-solid fa-book-open"></i> <span class="hidden sm:inline">魚類</span>図鑑
+                </button>
+                <button id="btn-sound" class="bg-slate-800 active:bg-slate-700 text-sky-300 p-2 rounded-xl text-xs border border-sky-500/30 transition">
+                    <i class="fa-solid fa-volume-high text-sm" id="sound-icon"></i>
+                </button>
+                <button id="btn-home" class="bg-slate-800 active:bg-slate-700 text-sky-300 font-bold px-3 py-2 rounded-xl text-xs border border-sky-500/30 transition active:scale-95">
+                    <i class="fa-solid fa-house"></i> TOP
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-5xl w-full mx-auto p-2 sm:p-4 flex flex-col justify-center">
+
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="bg-slate-900/90 border border-sky-500/40 rounded-2xl p-4 sm:p-7 my-auto max-w-2xl mx-auto shadow-2xl backdrop-blur">
+            <div class="text-center mb-5">
+                <h2 class="text-xl sm:text-2xl font-black mb-1 text-sky-200">🌊 モードと難易度を選んでスタート</h2>
+                <p class="text-slate-300 text-xs">タッチ操作に最適化！タップでカードをめくって学ぼう</p>
+            </div>
+
+            <div class="space-y-5">
+                <!-- Difficulty Selection -->
+                <div>
+                    <label class="block text-sky-300 font-bold text-xs sm:text-sm mb-2"><i class="fa-solid fa-layer-group"></i> 1. 難易度（カード枚数）</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button onclick="setDifficulty('easy')" id="diff-easy" class="diff-btn bg-slate-800 border-2 border-sky-500/30 active:border-sky-400 p-2.5 rounded-xl text-center transition">
+                            <div class="font-bold text-sky-200 text-xs sm:text-sm">初級</div>
+                            <div class="text-[10px] text-slate-400">8ペア (16枚)</div>
+                        </button>
+                        <button onclick="setDifficulty('normal')" id="diff-normal" class="diff-btn bg-slate-800 border-2 border-sky-500/30 active:border-sky-400 p-2.5 rounded-xl text-center transition">
+                            <div class="font-bold text-sky-200 text-xs sm:text-sm">中級</div>
+                            <div class="text-[10px] text-slate-400">12ペア (24枚)</div>
+                        </button>
+                        <button onclick="setDifficulty('hard')" id="diff-hard" class="diff-btn bg-slate-800 border-2 border-sky-500/30 active:border-sky-400 p-2.5 rounded-xl text-center transition">
+                            <div class="font-bold text-sky-200 text-xs sm:text-sm">上級</div>
+                            <div class="text-[10px] text-slate-400">15ペア (30枚)</div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mode Selection -->
+                <div>
+                    <label class="block text-sky-300 font-bold text-xs sm:text-sm mb-2"><i class="fa-solid fa-stopwatch"></i> 2. ゲームモード</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="setMode('timeattack')" id="mode-timeattack" class="mode-btn bg-slate-800 border-2 border-sky-500/30 active:border-sky-400 p-3 rounded-xl text-left transition flex items-center gap-2.5">
+                            <div class="text-2xl sm:text-3xl">⏱️</div>
+                            <div>
+                                <div class="font-bold text-sky-200 text-xs sm:text-sm">タイムアタック</div>
+                                <div class="text-[10px] text-slate-400">じっくりスピード勝負</div>
+                            </div>
+                        </button>
+                        <button onclick="setMode('speedstar')" id="mode-speedstar" class="mode-btn bg-slate-800 border-2 border-sky-500/30 active:border-sky-400 p-3 rounded-xl text-left transition flex items-center gap-2.5">
+                            <div class="text-2xl sm:text-3xl">⚡</div>
+                            <div>
+                                <div class="font-bold text-sky-200 text-xs sm:text-sm">スピードモード</div>
+                                <div class="text-[10px] text-slate-400">制限時間ありの極限戦</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Start Button -->
+                <button onclick="startGame()" class="w-full bg-gradient-to-r from-sky-500 via-teal-500 to-emerald-500 text-slate-950 font-black py-3.5 rounded-xl text-base sm:text-lg shadow-xl hover:brightness-110 active:scale-95 transition min-h-[52px]">
+                    <i class="fa-solid fa-play"></i> ゲームスタート！
+                </button>
+            </div>
+
+            <div class="mt-4 bg-slate-950/60 p-3 rounded-xl border border-sky-500/20 text-[11px] text-slate-300">
+                <span class="text-amber-400 font-bold">💡 ポイント:</span> 漁獲（捕獲）から「養殖・栽培漁業（育てる技術）」へのシフトと、水温管理・病気対策などの工夫を学ぼう！
+            </div>
+        </div>
+
+        <div id="game-container" class="hidden space-y-2.5">
+            <!-- Game Info Dashboard -->
+            <div class="bg-slate-900/90 border border-sky-500/30 rounded-xl p-2.5 shadow-lg flex justify-between items-center gap-2 text-xs">
+                <div class="flex items-center gap-2">
+                    <div class="bg-slate-800 px-2.5 py-1 rounded-lg border border-sky-500/20">
+                        <span id="time-label" class="text-sky-400 text-[9px] block font-bold">経過時間</span>
+                        <span id="timer-display" class="text-sm font-mono font-bold text-amber-300">00:00</span>
+                    </div>
+                    <div class="bg-slate-800 px-2.5 py-1 rounded-lg border border-sky-500/20">
+                        <span class="text-sky-400 text-[9px] block font-bold">ミス</span>
+                        <span id="miss-display" class="text-sm font-bold text-rose-400">0</span>
+                    </div>
+                    <div class="bg-slate-800 px-2.5 py-1 rounded-lg border border-sky-500/20">
+                        <span class="text-sky-400 text-[9px] block font-bold">スコア</span>
+                        <span id="score-display" class="text-sm font-bold text-emerald-300">1000</span>
+                    </div>
+                </div>
+
+                <div class="bg-slate-800 px-2.5 py-1 rounded-lg border border-sky-500/20 text-right">
+                    <span class="text-sky-400 text-[9px] block font-bold">残りペア</span>
+                    <span id="pairs-display" class="text-sm font-bold text-cyan-300">0 / 0</span>
+                </div>
+            </div>
+
+            <!-- Card Grid -->
+            <div id="card-grid" class="grid gap-1.5 sm:gap-2.5 max-w-4xl mx-auto py-1">
+                <!-- Cards injected dynamically via JS -->
+            </div>
+        </div>
+
+    </main>
+
+    <div id="knowledge-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-gradient-to-b from-slate-900 via-sky-950 to-slate-900 border-2 border-sky-400 rounded-2xl max-w-sm w-full p-4 shadow-2xl text-center transform transition-all scale-95 duration-200">
+            <div class="text-[10px] text-emerald-400 font-bold mb-0.5 tracking-widest uppercase">✨ PAIR MATCH! GET FISH!</div>
+            <div id="pop-fish-icon" class="text-5xl my-1 animate-bounce">🐟</div>
+            <h3 id="pop-fish-name" class="text-xl font-black text-white mb-1">マダイ</h3>
+            <div id="pop-fish-tags" class="flex justify-center gap-1 mb-2.5 flex-wrap">
+                <!-- Dynamic Badges -->
+            </div>
+
+            <div class="bg-slate-800/80 border border-sky-500/20 rounded-xl p-3 text-left text-xs text-slate-200 space-y-1.5 mb-3">
+                <div><span class="text-sky-400 font-bold"><i class="fa-solid fa-water"></i> 区分・産地:</span> <span id="pop-fish-location">愛媛県・熊本県など</span></div>
+                <div><span class="text-amber-400 font-bold"><i class="fa-solid fa-seedling"></i> 生育・養殖の工夫:</span></div>
+                <p id="pop-fish-desc" class="text-slate-300 text-[11px] leading-relaxed">人工孵化させた稚魚を海上の生け簀で育てる養殖技術が確立されています。</p>
+            </div>
+
+            <button onclick="closeKnowledgeModal()" class="w-full bg-gradient-to-r from-sky-500 to-teal-500 active:from-sky-400 active:to-teal-400 text-slate-950 font-black py-3 rounded-xl transition shadow-lg active:scale-95 min-h-[48px]">
+                つぎへ進む
+            </button>
+        </div>
+    </div>
+
+    <div id="encyclopedia-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-50 flex items-center justify-center p-3 hidden">
+        <div class="bg-slate-900 border border-sky-500/40 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            <div class="p-3 border-b border-sky-500/30 flex justify-between items-center bg-slate-950">
+                <h2 class="text-sm sm:text-base font-bold text-sky-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-book-open text-amber-400"></i> 水産生物・育成図鑑 (全15種)
+                </h2>
+                <button onclick="closeEncyclopedia()" class="text-slate-400 active:text-white text-2xl px-2 py-1">&times;</button>
+            </div>
+            <div id="encyclopedia-list" class="p-3 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <!-- Dynamic Items -->
+            </div>
+            <div class="p-2.5 border-t border-sky-500/30 bg-slate-950 text-center text-[11px] text-slate-400">
+                ※ゲームでペアを揃えると図鑑が解放されます。
+            </div>
+        </div>
+    </div>
+
+    <div id="result-modal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-md z-50 flex items-center justify-center p-3 hidden">
+        <div class="certificate-box max-w-md w-full p-5 rounded-2xl shadow-2xl text-center relative overflow-hidden">
+            <div class="text-[10px] font-bold tracking-widest text-amber-800 mb-0.5">中学校技術分野「生物育成の技術」</div>
+            <h2 class="text-xl sm:text-2xl font-black text-amber-900 border-b-2 border-amber-700/30 pb-1.5 mb-2.5">
+                認定修了証（表彰状）
+            </h2>
+
+            <div class="mb-2.5 flex items-center justify-center gap-1.5">
+                <input type="text" id="player-name-input" placeholder="名前を入力" value="技術 太郎" class="bg-amber-50/80 border border-amber-600/50 rounded-lg px-2.5 py-1 text-center font-bold text-amber-950 text-xs focus:outline-none">
+                <span class="text-xs text-amber-900 font-bold">殿</span>
+            </div>
+
+            <p class="text-[11px] text-amber-950 leading-relaxed mb-3">
+                水産生物の捕獲・養殖・水温及び水質管理に関する知識と優れた記憶力を発揮し、技術科水産単元を修了しました。
+            </p>
+
+            <div class="bg-amber-100/90 border border-amber-400 rounded-xl p-2.5 mb-3 text-center">
+                <span class="text-[10px] text-amber-800 font-bold block mb-0.5">【 獲得称号 / ランク 】</span>
+                <div id="res-rank" class="text-xl sm:text-2xl font-black text-rose-700 mb-1">SSS 水産育成マスター</div>
+                
+                <div class="grid grid-cols-3 gap-1 text-[11px] text-amber-950 border-t border-amber-300 pt-1.5 mt-1">
+                    <div>タイム: <strong id="res-time" class="block text-xs font-black">00:45</strong></div>
+                    <div>ミス: <strong id="res-miss" class="block text-xs font-black">2 回</strong></div>
+                    <div>スコア: <strong id="res-score" class="block text-xs font-black text-emerald-800">1250</strong></div>
+                </div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="restartGame()" class="flex-1 bg-amber-700 active:bg-amber-800 text-white font-bold py-2.5 rounded-xl shadow transition text-xs min-h-[44px]">
+                    もう一度挑戦する
+                </button>
+                <button onclick="openEncyclopedia()" class="bg-amber-200 active:bg-amber-300 text-amber-950 font-bold px-3 py-2.5 rounded-xl shadow transition text-xs min-h-[44px]">
+                    図鑑で復習
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Fish Database (15 Seafood items for Middle School Tech) ---
+        const FISH_DATABASE = [
+            { id: 1, name: "クロマグロ", icon: "🐟", category: "漁獲 / 完全養殖", type: "遠洋・沖合", location: "長崎県・鹿児島県", desc: "卵から大人まで人間が育てる「完全養殖」技術が日本で世界で初めて確立されました。" },
+            { id: 2, name: "サーモン (サケ)", icon: "🐟", category: "養殖 / 栽培漁業", type: "淡水・海面養殖", location: "北海道・宮城県・岩手県", desc: "稚魚を川から海へ移動させて育てる養殖や、放流して戻ってくるのを捕獲する栽培漁業が行われます。" },
+            { id: 3, name: "マダイ", icon: "🐠", category: "海面養殖中心", type: "生け簀養殖", location: "愛媛県・熊本県", desc: "日本の海面養殖でトップクラスの生産量。水温管理や配合飼料（エサ）の投与が鍵です。" },
+            { id: 4, name: "ウナギ", icon: "🐍", category: "内水面養殖", type: "温水池養殖", location: "鹿児島県・愛知県・静岡県", desc: "天然の稚魚（シラスウナギ）を捕まえ、温度管理された水槽で育てる内水面養殖が主です。" },
+            { id: 5, name: "ヒラメ", icon: "🐟", category: "陸上養殖 / 漁獲", type: "陸上水槽", location: "大分県・青森県", desc: "寄生虫や病気を防ぐため、水槽の水質や温度をコントロールする「陸上養殖」が有名です。" },
+            { id: 6, name: "ブリ", icon: "🐟", category: "海面養殖中心", type: "生け簀養殖", location: "鹿児島県・愛媛県", desc: "成長段階で名前が変わる出世魚。稚魚（モジャコ）を網生け簀に入れてエサを与えて育てます。" },
+            { id: 7, name: "ホタテガイ", icon: "🦪", category: "垂下式養殖 / 地まき", type: "貝類養殖", location: "北海道・青森県", desc: "ロープで海中に吊るす「垂下式（すいかしき）」や、海底に稚貝をまく「地まき増殖」があります。" },
+            { id: 8, name: "クルマエビ", icon: "🦐", category: "池養殖 / 陸上", type: "甲殻類養殖", location: "沖縄県・鹿児島県", desc: "温暖な地域の砂を敷いた養殖池で育てられます。水中の酸素量管理が極めて重要です。" },
+            { id: 9, name: "カキ (牡蠣)", icon: "🦪", category: "筏 (いかだ) 養殖", type: "貝類養殖", location: "広島県・宮城県", desc: "海上に浮かべた木製の筏からロープを吊るし、プランクトンを食べさせて大きく育てます。" },
+            { id: 10, name: "アジ", icon: "🐟", category: "沿岸・沖合漁業", type: "まき網・定置網", location: "長崎県・島根県", desc: "日本の食卓を支える代表的漁獲資源。近頃はご当地ブランド養殖アジも増えています。" },
+            { id: 11, name: "サバ", icon: "🐟", category: "まき網漁 / 陸上", type: "沖合漁業 / 陸上養殖", location: "茨城県・千葉県", desc: "沖合のまき網漁がメインですが、アニサキス対策として完全陸上養殖サバも開発されています。" },
+            { id: 12, name: "タコ (マダコ)", icon: "🐙", category: "沿岸漁業", type: "たこ壺・底引き網", location: "兵庫県・茨城県", desc: "タコ壺漁などが有名。養殖は稚ダコの飼育が困難なため研究段階にあります。" },
+            { id: 13, name: "イカ (スルメイカ)", icon: "🦑", category: "沖合漁業", type: "イカ釣り（集魚灯）", location: "北海道・青森県", desc: "夜間に強い光（集魚灯）でイカを集めて釣り上げる自動イカ釣り機などが使われます。" },
+            { id: 14, name: "ノリ (海苔)", icon: "🌿", category: "藻類養殖", type: "支柱式・浮き流し", location: "佐賀県 (有明海)・兵庫県", desc: "海中に網を張り、海藻（ノリ）を付着させて育てる水産植物育成の代表例です。" },
+            { id: 15, name: "アユ", icon: "🐟", category: "内水面養殖 / 友釣り", type: "河川・水槽", location: "徳島県・岐阜県", desc: "清流で育つ魚。人工孵化の稚魚を河川に放流して資源を増やす栽培漁業も行われます。" }
+        ];
+
+        // --- Sound Engine (Web Audio API) ---
+        class StandaloneSound {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+
+            playFlip() {
+                if (this.muted) return;
+                this.init();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(350, this.ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(700, this.ctx.currentTime + 0.06);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.06);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.06);
+            }
+
+            playMatch() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(freq, now + i * 0.06);
+                    gain.gain.setValueAtTime(0.12, now + i * 0.06);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.06 + 0.18);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.06);
+                    osc.stop(now + i * 0.06 + 0.18);
+                });
+            }
+
+            playMismatch() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.setValueAtTime(160, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            }
+
+            playClear() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50, 1318.51].forEach((f, i) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(f, now + i * 0.08);
+                    gain.gain.setValueAtTime(0.15, now + i * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + i * 0.08);
+                    osc.stop(now + i * 0.08 + 0.3);
+                });
+            }
+        }
+
+        const sound = new StandaloneSound();
+
+        // Enable AudioContext on first touch anywhere
+        window.addEventListener('touchstart', () => sound.init(), { once: true });
+        window.addEventListener('click', () => sound.init(), { once: true });
+
+        // --- Game State Variables ---
+        let selectedDifficulty = 'normal'; // 'easy'(8), 'normal'(12), 'hard'(15)
+        let selectedMode = 'timeattack';   // 'timeattack', 'speedstar'
+        
+        let pairCount = 12;
+        let cards = [];
+        let flippedCards = [];
+        let isProcessing = false;
+        
+        let pairsLeft = 0;
+        let missCount = 0;
+        let secondsElapsed = 0;
+        let remainingSpeedstarTime = 60;
+        let timerInterval = null;
+        
+        let unlockedFish = new Set();
+
+        // DOM Elements
+        const setupScreen = document.getElementById('setup-screen');
+        const gameContainer = document.getElementById('game-container');
+        const cardGrid = document.getElementById('card-grid');
+        const timerDisplay = document.getElementById('timer-display');
+        const timeLabel = document.getElementById('time-label');
+        const missDisplay = document.getElementById('miss-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const pairsDisplay = document.getElementById('pairs-display');
+
+        function setDifficulty(diff) {
+            selectedDifficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.remove('border-sky-400', 'bg-sky-900/40');
+            });
+            const activeBtn = document.getElementById(`diff-${diff}`);
+            activeBtn.classList.add('border-sky-400', 'bg-sky-900/40');
+
+            if (diff === 'easy') pairCount = 8;
+            if (diff === 'normal') pairCount = 12;
+            if (diff === 'hard') pairCount = 15;
+        }
+
+        function setMode(mode) {
+            selectedMode = mode;
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('border-sky-400', 'bg-sky-900/40');
+            });
+            const activeBtn = document.getElementById(`mode-${mode}`);
+            activeBtn.classList.add('border-sky-400', 'bg-sky-900/40');
+        }
+
+        setDifficulty('normal');
+        setMode('timeattack');
+
+        function startGame() {
+            setupScreen.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+
+            resetGameState();
+            buildCards();
+            startTimer();
+            updateScoreUI();
+        }
+
+        function resetGameState() {
+            clearInterval(timerInterval);
+            secondsElapsed = 0;
+            missCount = 0;
+            pairsLeft = pairCount;
+            flippedCards = [];
+            isProcessing = false;
+
+            if (selectedMode === 'speedstar') {
+                remainingSpeedstarTime = pairCount * 6; 
+                timeLabel.textContent = "制限時間";
+                timerDisplay.textContent = `${remainingSpeedstarTime}s`;
+            } else {
+                timeLabel.textContent = "経過時間";
+                timerDisplay.textContent = "00:00";
+            }
+
+            missDisplay.textContent = "0";
+            pairsDisplay.textContent = `${pairsLeft} / ${pairCount}`;
+        }
+
+        function buildCards() {
+            cardGrid.innerHTML = '';
+            
+            const shuffledFish = [...FISH_DATABASE].sort(() => Math.random() - 0.5).slice(0, pairCount);
+            
+            let deck = [];
+            shuffledFish.forEach(fish => {
+                deck.push({ ...fish, cardUid: fish.id + '-1' });
+                deck.push({ ...fish, cardUid: fish.id + '-2' });
+            });
+
+            deck.sort(() => Math.random() - 0.5);
+            cards = deck;
+
+            // Mobile-Optimized Grid Configurations
+            if (pairCount === 8) {
+                cardGrid.className = 'grid grid-cols-4 gap-1.5 sm:gap-2.5 max-w-2xl mx-auto py-1';
+            } else if (pairCount === 12) {
+                cardGrid.className = 'grid grid-cols-4 sm:grid-cols-6 gap-1.5 sm:gap-2.5 max-w-3xl mx-auto py-1';
+            } else {
+                cardGrid.className = 'grid grid-cols-5 sm:grid-cols-6 gap-1 sm:gap-2 max-w-4xl mx-auto py-1';
+            }
+
+            deck.forEach((fish, idx) => {
+                const card = document.createElement('div');
+                card.className = 'card card-perspective h-20 sm:h-24 cursor-pointer';
+                card.dataset.index = idx;
+
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-back">
+                            <span class="text-xl sm:text-2xl text-sky-200">🌊</span>
+                            <span class="text-[8px] sm:text-[9px] text-sky-200 font-bold mt-0.5">技術</span>
+                        </div>
+                        <div class="card-front p-1 text-center flex flex-col justify-between">
+                            <div class="text-xl sm:text-2xl mt-0.5">${fish.icon}</div>
+                            <div class="font-black text-[11px] sm:text-xs text-slate-800 truncate w-full leading-tight">${fish.name}</div>
+                            <div class="text-[8px] sm:text-[9px] text-sky-800 bg-sky-100 px-1 py-0.5 rounded font-bold truncate w-full">${fish.category}</div>
+                        </div>
+                    </div>
+                `;
+
+                // Touch & Click Event Handling
+                card.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handleCardFlip(idx);
+                });
+                
+                cardGrid.appendChild(card);
+            });
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (selectedMode === 'speedstar') {
+                    remainingSpeedstarTime--;
+                    timerDisplay.textContent = `${remainingSpeedstarTime}s`;
+                    if (remainingSpeedstarTime <= 0) {
+                        clearInterval(timerInterval);
+                        alert("⏱️ タイムアップ！もう一度チャレンジしよう！");
+                        restartGame();
+                    }
+                } else {
+                    secondsElapsed++;
+                    const m = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                    const s = String(secondsElapsed % 60).padStart(2, '0');
+                    timerDisplay.textContent = `${m}:${s}`;
+                }
+                updateScoreUI();
+            }, 1000);
+        }
+
+        function handleCardFlip(index) {
+            if (isProcessing) return;
+            const cardEl = cardGrid.children[index];
+            if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
+
+            sound.playFlip();
+            cardEl.classList.add('flipped');
+            flippedCards.push({ index, fish: cards[index] });
+
+            if (flippedCards.length === 2) {
+                evaluateMatch();
+            }
+        }
+
+        function evaluateMatch() {
+            isProcessing = true;
+            const [c1, c2] = flippedCards;
+
+            if (c1.fish.id === c2.fish.id) {
+                setTimeout(() => {
+                    sound.playMatch();
+                    cardGrid.children[c1.index].classList.add('matched');
+                    cardGrid.children[c2.index].classList.add('matched');
+
+                    unlockedFish.add(c1.fish.id);
+                    pairsLeft--;
+                    pairsDisplay.textContent = `${pairsLeft} / ${pairCount}`;
+
+                    updateScoreUI();
+                    showKnowledgeModal(c1.fish);
+
+                    flippedCards = [];
+                    isProcessing = false;
+
+                    if (pairsLeft === 0) {
+                        setTimeout(triggerGameClear, 500);
+                    }
+                }, 300);
+            } else {
+                const flipBackDelay = selectedMode === 'speedstar' ? 500 : 800;
+                setTimeout(() => {
+                    sound.playMismatch();
+                    cardGrid.children[c1.index].classList.remove('flipped');
+                    cardGrid.children[c2.index].classList.remove('flipped');
+
+                    missCount++;
+                    missDisplay.textContent = missCount;
+                    updateScoreUI();
+
+                    flippedCards = [];
+                    isProcessing = false;
+                }, flipBackDelay);
+            }
+        }
+
+        function calculateScore() {
+            let base = pairCount * 200;
+            let timeDeduction = selectedMode === 'speedstar' ? 0 : secondsElapsed * 5;
+            let missDeduction = missCount * 30;
+            return Math.max(100, base - timeDeduction - missDeduction);
+        }
+
+        function updateScoreUI() {
+            scoreDisplay.textContent = calculateScore();
+        }
+
+        function showKnowledgeModal(fish) {
+            document.getElementById('pop-fish-icon').textContent = fish.icon;
+            document.getElementById('pop-fish-name').textContent = fish.name;
+            
+            const tagsEl = document.getElementById('pop-fish-tags');
+            tagsEl.innerHTML = `
+                <span class="bg-sky-800 text-sky-200 text-[10px] px-2 py-0.5 rounded-full font-bold">${fish.category}</span>
+                <span class="bg-teal-800 text-teal-200 text-[10px] px-2 py-0.5 rounded-full font-bold">${fish.type}</span>
+            `;
+
+            document.getElementById('pop-fish-location').textContent = fish.location;
+            document.getElementById('pop-fish-desc').textContent = fish.desc;
+
+            document.getElementById('knowledge-modal').classList.remove('hidden');
+        }
+
+        function closeKnowledgeModal() {
+            document.getElementById('knowledge-modal').classList.add('hidden');
+        }
+
+        function openEncyclopedia() {
+            const list = document.getElementById('encyclopedia-list');
+            list.innerHTML = '';
+
+            FISH_DATABASE.forEach(fish => {
+                const isUnlocked = unlockedFish.has(fish.id);
+                const card = document.createElement('div');
+                card.className = `p-2.5 rounded-xl border flex gap-2.5 items-center transition ${
+                    isUnlocked 
+                    ? 'bg-slate-800 border-sky-400 text-white' 
+                    : 'bg-slate-950/40 border-slate-800 text-slate-500 opacity-60'
+                }`;
+
+                card.innerHTML = `
+                    <div class="text-2xl p-2 rounded-lg ${isUnlocked ? 'bg-sky-950' : 'bg-slate-900'}">${fish.icon}</div>
+                    <div class="flex-1 text-xs">
+                        <div class="flex justify-between items-center mb-0.5">
+                            <span class="font-bold text-xs ${isUnlocked ? 'text-sky-300' : 'text-slate-500'}">${fish.name}</span>
+                            <span class="text-[8px] px-1.5 py-0.5 rounded ${isUnlocked ? 'bg-sky-800 text-sky-100' : 'bg-slate-800 text-slate-600'}">${fish.category}</span>
+                        </div>
+                        <p class="text-[10px] ${isUnlocked ? 'text-slate-300' : 'text-slate-600'} leading-tight">${fish.desc}</p>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+
+            document.getElementById('encyclopedia-modal').classList.remove('hidden');
+        }
+
+        function closeEncyclopedia() {
+            document.getElementById('encyclopedia-modal').classList.add('hidden');
+        }
+
+        function triggerGameClear() {
+            clearInterval(timerInterval);
+            sound.playClear();
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+            }
+
+            const finalScore = calculateScore();
+
+            let rankText = "SSS 水産育成マスター";
+            if (finalScore >= 2000) rankText = "SSS 水産育成マスター";
+            else if (finalScore >= 1600) rankText = "SS 一級水産技能士";
+            else if (finalScore >= 1200) rankText = "S ベテラン漁士";
+            else if (finalScore >= 800) rankText = "A 見習い養殖家";
+            else rankText = "B ひよこフィッシャー";
+
+            document.getElementById('res-rank').textContent = rankText;
+            document.getElementById('res-time').textContent = selectedMode === 'speedstar' ? `${remainingSpeedstarTime}s 残り` : timerDisplay.textContent;
+            document.getElementById('res-miss').textContent = `${missCount} 回`;
+            document.getElementById('res-score').textContent = finalScore;
+
+            document.getElementById('result-modal').classList.remove('hidden');
+        }
+
+        function restartGame() {
+            document.getElementById('result-modal').classList.add('hidden');
+            gameContainer.classList.add('hidden');
+            setupScreen.classList.remove('hidden');
+            clearInterval(timerInterval);
+        }
+
+        document.getElementById('btn-home').addEventListener('click', () => {
+            if (confirm('トップ画面に戻りますか？')) {
+                restartGame();
+            }
+        });
+
+        document.getElementById('btn-encyclopedia').addEventListener('click', openEncyclopedia);
+
+        const soundBtn = document.getElementById('btn-sound');
+        const soundIcon = document.getElementById('sound-icon');
+        soundBtn.addEventListener('click', () => {
+            sound.muted = !sound.muted;
+            soundIcon.className = sound.muted ? 'fa-solid fa-volume-xmark text-rose-400 text-sm' : 'fa-solid fa-volume-high text-sky-300 text-sm';
+        });
+    </script>
+</body>
+</html>
